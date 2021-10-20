@@ -1,0 +1,6 @@
+/ca
+!/ca/.gitkeep
+/logs
+!/logs/.gitkeep
+/config/all-proxy/ssl_cert
+/.env
