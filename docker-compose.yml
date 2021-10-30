@@ -34,7 +34,7 @@ services:
       - |
           apk --no-cache add ca-certificates
           update-ca-certificates
-          if [ "$${AUTH_REGISTRIES}" = ":" ]; then
+          if [ "$${AUTH_REGISTRIES}" = "::" ]; then
             unset "$${AUTH_REGISTRIES}"
           fi
           exec /entrypoint.sh
