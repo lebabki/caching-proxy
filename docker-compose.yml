@@ -12,6 +12,7 @@ services:
     image: rpardini/docker-registry-proxy:0.6.4
     restart: unless-stopped
     environment:
+      ALLOW_PUSH: 'true'
       ENABLE_MANIFEST_CACHE: 'true'
       MANIFEST_CACHE_PRIMARY_REGEX: '(stable|nightly|production|test)'
       MANIFEST_CACHE_PRIMARY_TIME: 1d
@@ -21,6 +22,16 @@ services:
       CACHE_MAX_SIZE: 20g
       REGISTRIES: "k8s.gcr.io gcr.io quay.io ghcr.io ${GITLAB_SELFHOSTED_PRIVATE__FQDN} ${GITLAB_SELFHOSTED_PUBLIC__FQDN}"
       AUTH_REGISTRIES: "${GITLAB_SELFHOSTED_PRIVATE__FQDN}:${GITLAB_SELFHOSTED_PRIVATE__USERNAME}:${GITLAB_SELFHOSTED_PRIVATE__PASSWORD}"
+      SEND_TIMEOUT: 180s
+      CLIENT_BODY_TIMEOUT: 180s
+      CLIENT_HEADER_TIMEOUT: 180s
+      KEEPALIVE_TIMEOUT: 300s
+      PROXY_READ_TIMEOUT: 180s
+      PROXY_CONNECT_TIMEOUT: 180s
+      PROXY_SEND_TIMEOUT: 180s
+      PROXY_CONNECT_READ_TIMEOUT: 180s
+      PROXY_CONNECT_CONNECT_TIMEOUT: 180s
+      PROXY_CONNECT_SEND_TIMEOUT: 180s
     ports:
       - ${LISTEN_IFACE}:3128:3128
     volumes:
