@@ -15,12 +15,12 @@ services:
       ALLOW_PUSH: 'true'
       ENABLE_MANIFEST_CACHE: 'true'
       MANIFEST_CACHE_PRIMARY_REGEX: '(stable|nightly|production|test)'
-      MANIFEST_CACHE_PRIMARY_TIME: 1d
+      MANIFEST_CACHE_PRIMARY_TIME: 12h
       MANIFEST_CACHE_SECONDARY_REGEX: '(.*)(\d|\.)+(.*)(\d|\.)+(.*)(\d|\.)+'
-      MANIFEST_CACHE_SECONDARY_TIME: 3d
-      MANIFEST_CACHE_DEFAULT_TIME: 2d
+      MANIFEST_CACHE_SECONDARY_TIME: 1d
+      MANIFEST_CACHE_DEFAULT_TIME: 2s
       CACHE_MAX_SIZE: 20g
-      REGISTRIES: "k8s.gcr.io gcr.io quay.io ghcr.io ${GITLAB_SELFHOSTED_PRIVATE__FQDN} ${GITLAB_SELFHOSTED_PUBLIC__FQDN}"
+      REGISTRIES: "k8s.gcr.io gcr.io us.gcr.io quay.io ghcr.io ${GITLAB_SELFHOSTED_PRIVATE__FQDN} ${GITLAB_SELFHOSTED_PUBLIC__FQDN}"
       AUTH_REGISTRIES: "${GITLAB_SELFHOSTED_PRIVATE__FQDN}:${GITLAB_SELFHOSTED_PRIVATE__USERNAME}:${GITLAB_SELFHOSTED_PRIVATE__PASSWORD}"
       SEND_TIMEOUT: 180s
       CLIENT_BODY_TIMEOUT: 180s
@@ -51,10 +51,10 @@ services:
           exec /entrypoint.sh
     healthcheck:
       test: wget -q --spider http://localhost:3128
-      interval: 30s
-      timeout: 5s
+      interval: 15s
+      timeout: 3s
       retries: 2
-      start_period: 5s
+      start_period: 2s
 
   all-proxy:
     <<: *logging
@@ -70,12 +70,14 @@ services:
       - all-proxy-cache:/var/cache/squid
       - ./config/all-proxy:/etc/squid:ro
       - ./ca:/ca:ro
+      - ${ALL_PROXY__CA_CHAINS_DIRECTORY}:/usr/local/share/ca-certificates:ro
       - ./logs/all-proxy:/usr/local/squid/var/logs
     init: true
     entrypoint:
       - bash
       - -exc
       - |
+          update-ca-certificates
           export PATH=$$PATH:/usr/local/squid/sbin:/usr/local/squid/libexec
 
           mkdir -p /etc/squid-ssl /var/lib/squid /var/cache/squid
