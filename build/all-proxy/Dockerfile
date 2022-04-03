@@ -1,6 +1,7 @@
 FROM ubuntu:20.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV SQUID_VER 4.16
+# ENV SQUID_VER 4.16
+ENV SQUID_VER 5.4
 ENV SQUID_CONFIG_FILE /usr/local/squid/etc/squid.conf
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
