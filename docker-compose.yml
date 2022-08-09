@@ -1,16 +1,22 @@
 version: '3.9'
 
-x-logging: &logging
+x-common: &common
   logging:
     options:
       max-size: "5m"
       max-file: "10"
+  build:
+    network: host
+  restart: unless-stopped
+  init: true
+  network_mode: host
 
 services:
   registry-proxy:
-    <<: *logging
-    image: rpardini/docker-registry-proxy:0.6.4
-    restart: unless-stopped
+    <<: *common
+    image: registry-proxy:local
+    build:
+      context: ./build/registry-proxy
     environment:
       ALLOW_PUSH: 'true'
       ENABLE_MANIFEST_CACHE: 'true'
@@ -32,84 +38,44 @@ services:
       PROXY_CONNECT_READ_TIMEOUT: 180s
       PROXY_CONNECT_CONNECT_TIMEOUT: 180s
       PROXY_CONNECT_SEND_TIMEOUT: 180s
-    ports:
-      - ${LISTEN_IFACE}:3128:3128
+      LISTEN_ADDR: ${REGISTRY_PROXY__LISTEN_ADDR}
+      LISTEN_PORT: ${REGISTRY_PROXY__LISTEN_PORT}
     volumes:
       - registry-proxy-cache:/docker_mirror_cache
       - ./ca:/ca
       - ${GITLAB_SELFHOSTED__CA_CHAINS_DIRECTORY}:/usr/local/share/ca-certificates:ro
-    init: true
-    entrypoint:
-      - bash
-      - -exc
-      - |
-          apk --no-cache add ca-certificates
-          update-ca-certificates
-          if [ "$${AUTH_REGISTRIES}" = "::" ]; then
-            unset "$${AUTH_REGISTRIES}"
-          fi
-          exec /entrypoint.sh
     healthcheck:
-      test: wget -q --spider http://localhost:3128
+      test: wget -q --spider http://${REGISTRY_PROXY__LISTEN_ADDR}:${REGISTRY_PROXY__LISTEN_PORT}
       interval: 15s
       timeout: 3s
       retries: 2
       start_period: 2s
 
   all-proxy:
-    <<: *logging
+    <<: *common
     image: all-proxy:local
-    restart: unless-stopped
     build:
       context: ./build/all-proxy
-      network: host
-    ports:
-      - ${LISTEN_IFACE}:3129:3128
-      - 127.0.0.1:3129:3128
+    environment:
+      LISTEN_ADDR: ${ALL_PROXY__LISTEN_ADDR}
+      LISTEN_PORT: ${ALL_PROXY__LISTEN_PORT}
     volumes:
       - all-proxy-cache:/var/cache/squid
-      - ./config/all-proxy:/etc/squid:ro
       - ./ca:/ca:ro
       - ${ALL_PROXY__CA_CHAINS_DIRECTORY}:/usr/local/share/ca-certificates:ro
-      - ./logs/all-proxy:/usr/local/squid/var/logs
-    init: true
-    entrypoint:
-      - bash
-      - -exc
-      - |
-          update-ca-certificates
-          export PATH=$$PATH:/usr/local/squid/sbin:/usr/local/squid/libexec
-
-          mkdir -p /etc/squid-ssl /var/lib/squid /var/cache/squid
-          chown -R squid:squid /var/lib/squid /var/cache/squid /usr/local/squid/var/logs
-          rm -rfv /var/lib/squid/ssl_db
-
-          cp -fv --preserve=mode /ca/ca.crt /etc/squid-ssl/ca.crt
-          ## pass:foobar - hardcoded in docker-registry-proxy
-          openssl rsa -in /ca/ca.key -passin pass:foobar > /etc/squid-ssl/ca.key
-          openssl x509 -in /etc/squid-ssl/ca.crt -outform DER -out /etc/squid-ssl/ca.der
-
-          security_file_certgen -c -s /var/lib/squid/ssl_db -M 16MB
-          chown -R squid:squid /var/lib/squid/ssl_db
-          squid -f /etc/squid/squid.conf --foreground -z
-          exec squid -f /etc/squid/squid.conf --foreground -NYCd 1
     depends_on:
       # need to wait CA cert generation in registry-proxy service
       registry-proxy:
         condition: service_healthy
 
   non-cache-proxy:
-    <<: *logging
+    <<: *common
     image: non-cache-proxy:local
     build:
       context: ./build/non-cache-proxy
-      network: host
-    restart: unless-stopped
-    init: true
-    ports:
-      - 127.0.0.1:3128:3128
-    volumes:
-      - ./config/non-cache-proxy/tinyproxy.conf:/etc/tinyproxy/tinyproxy.conf:ro
+    environment:
+      LISTEN_ADDR: ${NON_CACHE_PROXY__LISTEN_ADDR}
+      LISTEN_PORT: ${NON_CACHE_PROXY__LISTEN_PORT}
 
 volumes:
   registry-proxy-cache:

@@ -22,16 +22,24 @@ RUN mkdir /downloads && cd /downloads \
 
 
 FROM ubuntu:20.04
-ENV SQUID_CONFIG_FILE /usr/local/squid/etc/squid.conf
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         ca-certificates \
         openssl \
         libssl-dev \
+        gosu \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=hairyhenderson/gomplate:v3.11.2-slim /gomplate /usr/local/bin/
 COPY --from=builder /usr/local/squid /usr/local/squid
-RUN touch /usr/local/squid/var/logs/access.log \
-    && touch /usr/local/squid/var/logs/cache.log \
-    && useradd -rU squid
+COPY cachemgr.conf errorpage.css mime.conf /etc/squid/
+COPY squid.conf.gotmpl /etc/gomplate/
+COPY pre.sh /pre.sh
+RUN useradd -rU squid \
+    && mkdir -p /etc/squid-ssl /var/lib/squid /var/cache/squid \
+    && chown -R squid:squid /var/lib/squid /var/cache/squid /usr/local/squid/var/logs /usr/local/squid/var/run/ \
+    && chmod 0755 /pre.sh
 VOLUME ["/usr/local/squid/var/logs/"]
+ENV SQUID_CONFIG_FILE=/etc/squid/squid.conf \
+    PATH="${PATH}:/usr/local/squid/sbin:/usr/local/squid/libexec"
+ENTRYPOINT ["/pre.sh"]

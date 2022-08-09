@@ -64,7 +64,7 @@ http_access deny all
 
 # Squid normally listens to port 3128
 # http_port 3128
-http_port 0.0.0.0:3128 ssl-bump cert=/etc/squid-ssl/ca.crt key=/etc/squid-ssl/ca.key generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+http_port {{ .Env.LISTEN_ADDR }}:{{ .Env.LISTEN_PORT }} ssl-bump cert=/etc/squid-ssl/ca.crt key=/etc/squid-ssl/ca.key generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
 sslcrtd_program /usr/local/squid/libexec/security_file_certgen -s /var/lib/squid/ssl_db -M 16MB
 sslcrtd_children 5
 
@@ -99,3 +99,8 @@ maximum_object_size 10096 MB
 shutdown_lifetime 3 seconds
 
 max_filedesc 4096
+
+logfile_rotate 0
+cache_log stdio:/dev/stdout
+access_log stdio:/dev/stdout
+cache_store_log stdio:/dev/stdout

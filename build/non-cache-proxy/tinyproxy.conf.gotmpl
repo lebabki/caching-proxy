@@ -20,14 +20,14 @@ Group tinyproxy
 # that should you choose to run on a port lower than 1024 you will need
 # to start tinyproxy using root.
 #
-Port 3128
+Port {{ .Env.LISTEN_PORT }}
 
 #
 # Listen: If you have multiple interfaces this allows you to bind to
 # only one. If this is commented out, tinyproxy will bind to all
 # interfaces present.
 #
-Listen 0.0.0.0
+Listen {{ .Env.LISTEN_ADDR }}
 
 #
 # Bind: This allows you to specify which interface will be used for
