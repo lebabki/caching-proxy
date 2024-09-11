@@ -1,5 +1,3 @@
-version: '3.9'
-
 x-common: &common
   logging:
     options:
@@ -26,7 +24,7 @@ services:
       MANIFEST_CACHE_SECONDARY_TIME: 1d
       MANIFEST_CACHE_DEFAULT_TIME: 2s
       CACHE_MAX_SIZE: 20g
-      REGISTRIES: "k8s.gcr.io gcr.io us.gcr.io quay.io ghcr.io ${GITLAB_SELFHOSTED_PRIVATE__FQDN} ${GITLAB_SELFHOSTED_PUBLIC__FQDN}"
+      REGISTRIES: "mirror.gcr.io k8s.gcr.io gcr.io us.gcr.io quay.io ghcr.io registry.developers.crunchydata.com ${GITLAB_SELFHOSTED_PRIVATE__FQDN} ${GITLAB_SELFHOSTED_PUBLIC__FQDN}"
       AUTH_REGISTRIES: "${GITLAB_SELFHOSTED_PRIVATE__FQDN}:${GITLAB_SELFHOSTED_PRIVATE__USERNAME}:${GITLAB_SELFHOSTED_PRIVATE__PASSWORD}"
       SEND_TIMEOUT: 180s
       CLIENT_BODY_TIMEOUT: 180s
@@ -50,6 +48,8 @@ services:
       timeout: 3s
       retries: 2
       start_period: 2s
+    profiles:
+      - without-all-proxy
 
   all-proxy:
     <<: *common
@@ -67,6 +67,8 @@ services:
       # need to wait CA cert generation in registry-proxy service
       registry-proxy:
         condition: service_healthy
+    profiles:
+      - all-proxy
 
   non-cache-proxy:
     <<: *common
@@ -76,6 +78,9 @@ services:
     environment:
       LISTEN_ADDR: ${NON_CACHE_PROXY__LISTEN_ADDR}
       LISTEN_PORT: ${NON_CACHE_PROXY__LISTEN_PORT}
+    profiles:
+      - without-all-proxy
+
 
 volumes:
   registry-proxy-cache:
